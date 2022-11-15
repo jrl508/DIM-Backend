@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
 export const registerUser = async (req,res) => {
+    console.log('REQUEST MADE:', req)
     const user = req.body;
 
     // check if credentials already exists
@@ -27,13 +28,15 @@ export const registerUser = async (req,res) => {
 }
 
 export const loginUser = async (req, res) => {
+
     const loginCredentials = req.body;
 
     User.findOne({ username: loginCredentials.username })
         .then( dbUser => {
                 if(!dbUser) {
-                    return res.json({
-                        message:'Invalid Username or Password'
+                    return res.status(401).json({
+                        message:'Invalid Username or Password',
+                        error: true
                     })
                 }
                 bcrypt.compare(loginCredentials.password, dbUser.password)
@@ -48,16 +51,22 @@ export const loginUser = async (req, res) => {
                             process.env.JWT_SECRET,
                             {expiresIn: 86400},
                             (err, token) => {
-                                if(err) return res.json({message: err})
+                                if(err) {
+                                    return res.json({message: err})
+                                }
                                 return res.json({
                                     message: "Success",
-                                    token: `Bearer ${token}` 
+                                    token: `Bearer ${token}`, 
+                                    error: false,
+                                    id: dbUser._id,
+                                    username: dbUser.username,
+                                    email: dbUser.email
                                 })
                             }
                             )
                     } else {
-                        return res.json({
-                            message:'Invalid Username or Password'
+                        return res.status(401).json({
+                            error:'Invalid Username or Password',  
                         })
                     }
 
