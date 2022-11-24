@@ -3,15 +3,13 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
 export const registerUser = async (req,res) => {
-    console.log('REQUEST MADE:', req)
     const user = req.body;
-
     // check if credentials already exists
-    const takenUsername = await User.findOne({username: user.username})
-    const takenEmail = await User.findOne({email: user.email})
+    const takenUsername = await User.findOne({username: user.username.toLowerCase()})
+    const takenEmail = await User.findOne({email: user.email.toLowerCase()})
 
     if(takenUsername || takenEmail) {
-        res.json({message: 'Username or email are already in use'})
+        res.status(409).json({error: 'Username or email are already in use'})
     } else {
         const hashword = await bcrypt.hash(user.password, 10);
 
@@ -22,9 +20,8 @@ export const registerUser = async (req,res) => {
         })
 
         dbUser.save();
-        res.json({message:'User successfully registered'})
+        res.status(201).json({message:'User successfully registered'})
     }
-
 }
 
 export const loginUser = async (req, res) => {
@@ -35,8 +32,7 @@ export const loginUser = async (req, res) => {
         .then( dbUser => {
                 if(!dbUser) {
                     return res.status(401).json({
-                        message:'Invalid Username or Password',
-                        error: true
+                        error:'Invalid Username or Password',
                     })
                 }
                 bcrypt.compare(loginCredentials.password, dbUser.password)
@@ -57,7 +53,7 @@ export const loginUser = async (req, res) => {
                                 return res.json({
                                     message: "Success",
                                     token: `Bearer ${token}`, 
-                                    error: false,
+                                    error: null,
                                     id: dbUser._id,
                                     username: dbUser.username,
                                     email: dbUser.email
